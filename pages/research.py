@@ -15,6 +15,11 @@ def _service() -> KeywordResearchService:
     return KeywordResearchService(create_provider(settings), JsonCache(CACHE_FILE), settings)
 
 
+def _restore_cached_results() -> list[dict]:
+    settings = get_settings()
+    return JsonCache(CACHE_FILE).values("metrics", settings.metrics_cache_days)
+
+
 def _filtered_results(results: list[dict]) -> pd.DataFrame:
     frame = results_frame(results)
     if frame.empty:
@@ -30,9 +35,18 @@ def _filtered_results(results: list[dict]) -> pd.DataFrame:
     return filtered.sort_values("月間平均検索ボリューム", ascending=False)
 
 
+def _standalone_page(render_page):
+    if __name__ == "__main__":
+        render_page()
+    return render_page
+
+
+@_standalone_page
 def render() -> None:
     st.title("キーワード調査")
     settings = get_settings()
+    if not st.session_state.get("results"):
+        st.session_state.results = _restore_cached_results()
     if settings.ads_configured:
         st.success("Google Ads API モード（日本・日本語）")
     else:

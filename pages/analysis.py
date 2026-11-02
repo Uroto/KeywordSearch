@@ -4,9 +4,22 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+from config import CACHE_FILE, get_settings
+from services.cache import JsonCache
 
+
+def _standalone_page(render_page):
+    if __name__ == "__main__":
+        render_page()
+    return render_page
+
+
+@_standalone_page
 def render() -> None:
     st.title("検索数分析")
+    if not st.session_state.get("results"):
+        settings = get_settings()
+        st.session_state.results = JsonCache(CACHE_FILE).values("metrics", settings.metrics_cache_days)
     results = st.session_state.get("results", [])
     if not results:
         st.info("キーワード調査画面で検索指標を取得すると、月別検索数を分析できます。")

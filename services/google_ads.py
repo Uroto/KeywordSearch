@@ -21,6 +21,13 @@ def _month_name(month_number: int) -> str:
     return f"{month_number:02d}"
 
 
+MONTH_NAME_TO_NUMBER = {
+    "JANUARY": 1, "FEBRUARY": 2, "MARCH": 3, "APRIL": 4,
+    "MAY": 5, "JUNE": 6, "JULY": 7, "AUGUST": 8,
+    "SEPTEMBER": 9, "OCTOBER": 10, "NOVEMBER": 11, "DECEMBER": 12,
+}
+
+
 class DummyKeywordProvider:
     """Deterministic sample provider for development without API credentials."""
 
@@ -108,7 +115,7 @@ class GoogleAdsKeywordProvider:
         for item in response.results:
             metrics = item.keyword_metrics
             monthly = [
-                {"month": f"{entry.year}-{int(entry.month):02d}", "volume": entry.monthly_searches}
+                {"month": f"{entry.year}-{self._month_number(entry.month):02d}", "volume": entry.monthly_searches}
                 for entry in metrics.monthly_search_volumes
             ]
             results.append({
@@ -137,6 +144,17 @@ class GoogleAdsKeywordProvider:
         except Exception as error:
             self._raise_translated_error(error)
         return list(dict.fromkeys(item.text for item in response))
+
+    @staticmethod
+    def _month_number(month: object) -> int:
+        name = getattr(month, "name", str(month)).upper().rsplit(".", maxsplit=1)[-1]
+        if name in MONTH_NAME_TO_NUMBER:
+            return MONTH_NAME_TO_NUMBER[name]
+        # Fallback for protobuf enum values: January=2 through December=13.
+        numeric_value = int(month)
+        if 2 <= numeric_value <= 13:
+            return numeric_value - 1
+        raise ValueError(f"Google Ads API returned an invalid month value: {month}")
 
     @staticmethod
     def _competition(value: object) -> str:

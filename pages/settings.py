@@ -6,6 +6,13 @@ from config import CACHE_FILE, get_settings, save_settings
 from services.cache import JsonCache
 
 
+def _standalone_page(render_page):
+    if __name__ == "__main__":
+        render_page()
+    return render_page
+
+
+@_standalone_page
 def render() -> None:
     st.title("設定")
     settings = get_settings()
